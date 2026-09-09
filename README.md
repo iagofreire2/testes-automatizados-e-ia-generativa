@@ -40,7 +40,8 @@ Demonstrar a aplicação de técnicas modernas de **Engenharia de Prompt** para:
 ├── server/               # API REST construída em Express + Swagger
 │   ├── cypress/          # Suíte de testes automatizados de API (Cypress)
 │   │   └── e2e/
-│   │       └── api-v1.cy.js
+│   │       ├── api-v1.cy.js
+│   │       └── api-v2.cy.js
 │   ├── db/               # Banco de dados em memória e dados estáticos
 │   └── server.js         # Servidor Express e documentação Swagger
 │
@@ -88,6 +89,7 @@ A API expõe o endpoint `/customers` com suporte a paginação e filtros (`size`
    - **Modo Headless (Terminal):**
      ```bash
      npx cypress run --spec cypress/e2e/api-v1.cy.js
+     npx cypress run --spec cypress/e2e/api-v2.cy.js
      ```
 
 ---

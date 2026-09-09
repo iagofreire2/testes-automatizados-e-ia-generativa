@@ -15,3 +15,14 @@
 
 // Import commands.js using ES2015 syntax:
 import './commands'
+
+Cypress.Commands.overwrite('request', (originalFn, ...args) => {
+  if (typeof args[0] === 'string' && typeof args[1] === 'string') {
+    return originalFn({
+      method: args[0],
+      url: args[1],
+      failOnStatusCode: false
+    })
+  }
+  return originalFn(...args)
+})
