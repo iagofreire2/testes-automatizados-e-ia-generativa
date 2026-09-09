@@ -1,5 +1,5 @@
 describe('GET /customers', () => {
-  const apiUrl = Cypress.env('API_URL')
+  const apiUrl = Cypress.expose('API_URL')
 
   context('Cenários de sucesso', () => {
     it('retorna 200 e a estrutura correta com os parâmetros padrão', () => {
