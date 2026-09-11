@@ -1,5 +1,5 @@
 import { mount } from 'cypress/react18';
-import { ThankYouPage } from '../../src/components/ThankYouPage';
+import { ThankYouPage } from './ThankYouPage';
 
 describe('ThankYouPage', () => {
   it('displays the purchase confirmation and order number', () => {
