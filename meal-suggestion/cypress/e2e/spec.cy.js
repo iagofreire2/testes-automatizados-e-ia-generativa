@@ -1,88 +1,79 @@
-describe('Meal Suggestion App - Testes E2E', () => {
+describe('Sugestão de Refeição Vegana', () => {
   beforeEach(() => {
+    // Como o baseUrl está configurado no cypress.config.js, visitamos apenas a rota do arquivo
     cy.visit('/index.html');
   });
 
-  it('deve carregar a página com layout e elementos base visíveis', () => {
-    // Valida título da aplicação e botão de ação
-    cy.get('h1, h2').should('be.visible');
-    cy.get('button').should('be.visible').and('not.be.disabled');
-
-    // Valida container da sugestão/refeição
-    cy.get('body').should('contain.text', '');
+  it('deve carregar a página e exibir uma refeição aleatória inicialmente', () => {
+    // Verifica se os elementos principais foram renderizados
+    cy.get('h1').should('contain.text', 'Refeição vegana');
+    cy.get('#meal-type-filter').should('have.value', 'all');
+    cy.get('#search-field').should('have.value', '');
+    
+    // Verifica se uma refeição foi gerada na inicialização
+    cy.get('#meal-name').should('not.be.empty');
+    cy.get('#ingredients-label').should('contain.text', 'Ingredientes:');
+    cy.get('#ingredients-list li').should('have.length.at.least', 1);
   });
 
-  it('deve exibir os detalhes da refeição sugerida (nome, imagem e instruções/ingredientes)', () => {
-    // Garante que o nome da refeição está presente e não vazio
-    cy.get('#meal-name, [data-testid="meal-name"], .meal-title, h3')
-      .first()
-      .should('be.visible')
-      .invoke('text')
-      .should('have.length.greaterThan', 0);
-
-    // Valida que a imagem da refeição foi carregada com sucesso
-    cy.get('img')
-      .first()
-      .should('be.visible')
-      .and(($img) => {
-        // Verifica se o atributo src existe e a imagem foi renderizada no DOM
-        expect($img[0].naturalWidth).to.be.greaterThan(0);
-      });
+  it('deve filtrar refeições por "Alto teor de proteína"', () => {
+    // Seleciona a opção de alto teor de proteína no select
+    cy.get('#meal-type-filter').select('high-protein');
+    
+    // O texto do título deve conter a string indicando alto teor de proteína, conforme o script.js
+    cy.get('#meal-name').should('contain.text', 'com alto teor de proteína');
   });
 
-  it('deve atualizar a sugestão ao clicar no botão de gerar nova refeição', () => {
-    const mealSelector = '#meal-name, [data-testid="meal-name"], .meal-title, h3';
-
-    // Captura o nome da refeição inicial
-    cy.get(mealSelector)
-      .first()
-      .invoke('text')
-      .then((primeiraRefeicao) => {
-        // Clica no botão para obter nova sugestão
-        cy.get('button').contains(/get meal|generate|nova|suggest/i).click();
-
-        // Aguarda a atualização e verifica se o conteúdo mudou ou foi re-renderizado
-        cy.get(mealSelector)
-          .first()
-          .should('be.visible')
-          .invoke('text')
-          .should((segundaRefeicao) => {
-            expect(segundaRefeicao.trim()).to.not.be.empty;
-          });
-      });
+  it('deve filtrar refeições por "Sopas"', () => {
+    // Seleciona a opção de sopas
+    cy.get('#meal-type-filter').select('soup');
+    
+    // Verifica se a refeição gerada corresponde ao tipo "sopa" (baseado no mealEnum)
+    cy.get('#meal-name').should('contain.text', 'sopa');
   });
 
-  it('deve interceptar a chamada de API e validar o mock de uma refeição', () => {
-    // Intercepta a requisição para APIs públicas comuns desse tipo de app (ex: TheMealDB)
-    cy.intercept('GET', '**/api/json/v1/1/random.php', {
-      statusCode: 200,
-      body: {
-        meals: [
-          {
-            strMeal: 'Cypress Test Pasta',
-            strMealThumb: 'https://www.themealdb.com/images/media/meals/ustsqw1468250014.jpg',
-            strInstructions: 'Cozinhe a massa e rode os testes com sucesso.',
-            strCategory: 'Pasta',
-            strArea: 'Italian'
-          }
-        ]
-      }
-    }).as('getRandomMeal');
+  it('deve buscar por uma refeição específica pelo nome', () => {
+    const mealToSearch = 'Feijoada';
+    
+    // Digita o nome e simula o evento 'change' (pressionando Enter)
+    cy.get('#search-field').type(`${mealToSearch}{enter}`);
+    
+    // Verifica se o prato buscado é exibido corretamente na tela
+    cy.get('#meal-name').should('contain.text', mealToSearch);
+    cy.get('#ingredients-list li').first().should('contain.text', 'feijão vermelho');
+  });
 
-    cy.visit('/index.html');
+  it('deve buscar de forma case-insensitive', () => {
+    // Digita buscando em letras minúsculas
+    cy.get('#search-field').type('queijadilla{enter}');
+    
+    cy.get('#meal-name').should('contain.text', 'Queijadilla');
+  });
 
-    // Caso a aplicação busque na inicialização ou no clique
-    cy.get('body').then(($body) => {
-      if ($body.find('button').length > 0) {
-        cy.get('button').click();
-      }
+  it('deve limpar o campo de busca ao clicar no botão "Buscar" quando há texto', () => {
+    cy.get('#search-field').type('Tofu');
+    
+    // Clica no botão de submissão
+    cy.get('button[type="submit"]').click();
+    
+    // O script.js previne o recarregamento (e.preventDefault) e limpa o input
+    cy.get('#search-field').should('have.value', '');
+  });
+
+  it('deve gerar uma nova refeição ao clicar no botão "Buscar" com o campo vazio', () => {
+    cy.get('#search-field').clear();
+    
+    // Captura o nome da refeição atual para comparar depois
+    cy.get('#meal-name').invoke('text').then((initialMealName) => {
+      // Clica no botão para gerar nova refeição
+      cy.get('button[type="submit"]').click();
+      
+      // Verifica se a função generateMeal() foi chamada limpando o input (mesmo já estando vazio)
+      cy.get('#search-field').should('have.value', '');
+      
+      // Nota: Como é aleatório, existe uma pequena chance de gerar a mesma refeição, 
+      // mas o comportamento esperado de execução do botão é testado aqui.
+      cy.get('#meal-name').should('not.be.empty');
     });
-
-    // Se a aplicação utilizar essa API, valida a resposta mockada
-    cy.wait('@getRandomMeal').then((interception) => {
-      expect(interception.response.statusCode).to.eq(200);
-    });
-
-    cy.contains('Cypress Test Pasta').should('be.visible');
   });
 });
